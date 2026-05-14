@@ -101,7 +101,7 @@ export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: Dashboard
   const COLORS = chartData.map(d => d.color);
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-24 animate-in fade-in duration-300">
       <div className="uppercase tracking-widest text-[13px] font-bold text-slate-500 pl-1">Resumo Geral</div>
       
       {chartData.length > 0 && (

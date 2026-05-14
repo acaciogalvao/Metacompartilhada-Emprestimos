@@ -272,26 +272,27 @@ export default function App() {
             <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white text-sm font-medium transition-all w-11/12 max-w-sm text-center ${toastMessage.type === "success" ? "bg-emerald-500/90 backdrop-blur border border-emerald-400/20" : "bg-rose-500/90 backdrop-blur border border-rose-400/20"}`}>
               {toastMessage.text}
             </div>
-          )}
-
-          {/* Dashboard tab: full-screen overlay */}
-          {isDashboardTab && !isEditing && (
-            <div className="flex-1 p-4 md:p-8">
+          )}          {/* Dashboard tab: full-screen overlay */}
+          {isDashboardTab && !isEditing ? (
+            <div 
+              key="dashboard"
+              className="flex-1 p-4 md:p-8 animate-in fade-in duration-300"
+            >
               <div className="mb-6">
                 <h1 className="text-2xl font-bold text-white">Painel Geral</h1>
                 <p className="text-slate-400 text-sm mt-1">Visão consolidada de todos seus compromissos</p>
               </div>
-              <Dashboard
+              <Dashboard 
                 goalsList={goalsList}
                 formatCurrency={formatCurrency}
                 onSelectGoal={handleSelectGoalFromDashboard}
               />
             </div>
-          )}
-
-          {/* Non-dashboard content */}
-          {!isDashboardTab && (
-            <>
+          ) : (
+            <div 
+              key="main-content"
+              className="w-full animate-in fade-in duration-300"
+            >
               {!isEditing && (
                 <GoalSectionTabs
                   currentSection={currentSection}
@@ -442,6 +443,7 @@ export default function App() {
                 {activeTab === "historico" && (
                   <div className="mb-24">
                     <PaymentHistory
+                      goalType={goalType}
                       paymentsHistory={paymentsHistory}
                       nameP1={nameP1}
                       nameP2={nameP2}
@@ -459,7 +461,7 @@ export default function App() {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
 
           <BottomNav

@@ -23,7 +23,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header className="flex justify-between items-end mb-8">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-none">
+        <h1 
+          className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-none animate-in fade-in"
+        >
           {currentSection === "emprestimos"
             ? "Meus Empréstimos"
             : goalType === "individual"

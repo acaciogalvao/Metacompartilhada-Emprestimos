@@ -20,6 +20,7 @@ import {
   Download,
   User,
   CreditCard,
+  Search,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -53,6 +54,7 @@ interface PaymentHistoryProps {
   totalPeriodsP1?: number;
   totalPeriodsP2?: number;
   handleDeletePayment?: (paymentId: string) => void;
+  goalType?: string;
 }
 
 export function PaymentHistory({
@@ -69,6 +71,7 @@ export function PaymentHistory({
   totalPeriodsP1 = 0,
   totalPeriodsP2 = 0,
   handleDeletePayment,
+  goalType,
 }: PaymentHistoryProps) {
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -155,8 +158,18 @@ export function PaymentHistory({
         const methodMatch = selectedMethod === "all" || effectiveMethod === selectedMethod;
 
         const payerName = payment.payerId === "P1" ? nameP1 : nameP2;
-        const searchMatch = !searchTerm || payerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (payment.paymentId || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const normalizeString = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+        
+        const dateStr = new Date(payment.date).toLocaleDateString("pt-BR");
+        
+        const searchMatch = !searchTerm || 
+                          normalizeString(payerName).includes(normalizeString(searchTerm)) || 
+                          normalizeString(payment.paymentId).includes(normalizeString(searchTerm)) ||
+                          payment.amount.toString().includes(searchTerm) ||
+                          formatCurrency(payment.amount).includes(searchTerm) ||
+                          normalizeString(effectiveMethod).includes(normalizeString(searchTerm)) ||
+                          dateStr.includes(searchTerm);
 
         return monthMatch && yearMatch && payerMatch && methodMatch && searchMatch;
       })
@@ -366,34 +379,44 @@ export function PaymentHistory({
                   ))}
                 </select>
                 
-                <div className="w-px h-6 bg-white/10 self-center flex-shrink-0 ml-2" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar titular..."
-                  className="bg-white/10 border border-white/5 text-white text-sm rounded-lg p-1.5 outline-none px-3 ml-2 flex-grow min-w-[120px]"
-                  value={searchTerm}
-                  onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(5); }}
-                />
+                <div className="w-px h-6 bg-white/10 self-center flex-shrink-0 mx-2" />
+                <div className="relative flex-grow min-w-[140px] flex items-center bg-white/10 border border-white/5 rounded-lg overflow-hidden focus-within:border-emerald-500/50 transition-colors">
+                  <div className="pl-3 pr-2 py-1.5 flex items-center justify-center cursor-pointer" onClick={() => setVisibleCount(5)}>
+                    <Search className="w-4 h-4 text-slate-400 hover:text-white transition-colors" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Buscar valor, data ou ID..."
+                    className="bg-transparent text-white text-sm w-full outline-none py-1.5 pr-3"
+                    value={searchTerm}
+                    onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(5); }}
+                    onKeyDown={(e) => { if(e.key === 'Enter') setVisibleCount(5); }}
+                  />
+                </div>
               </div>
 
               {/* Row 2: Payer/Method filters */}
               <div className="flex gap-2 bg-white/5 p-2 rounded-2xl shadow-sm border border-white/10 overflow-x-auto scrollbar-hide">
-                <div className="flex items-center gap-2 pl-2 flex-shrink-0">
-                  <User className="w-4 h-4 text-slate-400" />
-                </div>
-                {(["all", "P1", "P2"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => { setSelectedPayer(v); setVisibleCount(5); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 transition-colors ${
-                      selectedPayer === v ? "bg-sky-500 text-white" : "bg-white/10 text-slate-300 hover:bg-white/20"
-                    }`}
-                  >
-                    {v === "all" ? "Todos" : v === "P1" ? nameP1 : nameP2}
-                  </button>
-                ))}
-                <div className="w-px h-6 bg-white/10 self-center flex-shrink-0" />
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {goalType !== "individual" && (
+                  <>
+                    <div className="flex items-center gap-2 pl-2 flex-shrink-0">
+                      <User className="w-4 h-4 text-slate-400" />
+                    </div>
+                    {(["all", "P1", "P2"] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => { setSelectedPayer(v); setVisibleCount(5); }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex-shrink-0 transition-colors ${
+                          selectedPayer === v ? "bg-sky-500 text-white" : "bg-white/10 text-slate-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {v === "all" ? "Todos" : v === "P1" ? nameP1 : nameP2}
+                      </button>
+                    ))}
+                    <div className="w-px h-6 bg-white/10 self-center flex-shrink-0 mx-2" />
+                  </>
+                )}
+                <div className="flex items-center gap-2 flex-shrink-0 pl-2">
                   <CreditCard className="w-4 h-4 text-slate-400" />
                 </div>
                 {(["all", "pix", "dinheiro"] as const).map((v) => (
