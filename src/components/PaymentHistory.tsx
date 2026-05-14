@@ -75,6 +75,7 @@ export function PaymentHistory({
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedPayer, setSelectedPayer] = useState<"all" | "P1" | "P2">("all");
   const [selectedMethod, setSelectedMethod] = useState<"all" | "pix" | "dinheiro">("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
 
@@ -153,10 +154,14 @@ export function PaymentHistory({
         const payerMatch = selectedPayer === "all" || payment.payerId === selectedPayer;
         const methodMatch = selectedMethod === "all" || effectiveMethod === selectedMethod;
 
-        return monthMatch && yearMatch && payerMatch && methodMatch;
+        const payerName = payment.payerId === "P1" ? nameP1 : nameP2;
+        const searchMatch = !searchTerm || payerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (payment.paymentId || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+        return monthMatch && yearMatch && payerMatch && methodMatch && searchMatch;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [paymentsWithLabels, selectedMonth, selectedYear, selectedPayer, selectedMethod]);
+  }, [paymentsWithLabels, selectedMonth, selectedYear, selectedPayer, selectedMethod, searchTerm, nameP1, nameP2]);
 
   const displayedPayments = filteredPayments.slice(0, visibleCount);
   const hasMore = visibleCount < filteredPayments.length;
@@ -253,10 +258,44 @@ export function PaymentHistory({
     setSelectedYear("all");
     setSelectedPayer("all");
     setSelectedMethod("all");
+    setSearchTerm("");
     setVisibleCount(5);
   };
 
-  const hasActiveFilters = selectedMonth !== "all" || selectedYear !== "all" || selectedPayer !== "all" || selectedMethod !== "all";
+  const hasActiveFilters = selectedMonth !== "all" || selectedYear !== "all" || selectedPayer !== "all" || selectedMethod !== "all" || searchTerm !== "";
+
+  const exportToCSV = () => {
+    if (filteredPayments.length === 0) return;
+    const headers = ["Data", "Pagador", "Valor", "Status", "Forma", "Mês", "Ano"];
+    const rows = filteredPayments.map((p) => {
+      const d = new Date(p.date);
+      const isP1 = p.payerId === "P1";
+      const payerName = isP1 ? nameP1 : nameP2;
+      const status = getEffectiveMethod(p) === "dinheiro" ? "Concluído" : "Pix Confirmado";
+      const method = getEffectiveMethod(p) === "dinheiro" ? "Dinheiro" : "Pix";
+      const monthRegex = (d.getMonth() + 1).toString().padStart(2, "0");
+      const yearRegex = d.getFullYear().toString();
+      
+      return [
+        d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        `"${payerName}"`,
+        `"${formatCurrency(p.amount)}"`,
+        `"${status}"`,
+        `"${method}"`,
+        monthRegex,
+        yearRegex,
+      ].join(",");
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `extrato_pagamentos_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <>
@@ -285,6 +324,17 @@ export function PaymentHistory({
                 Limpar
               </Button>
             )}
+            {paymentsHistory.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-emerald-400 border-emerald-400/20 hover:bg-emerald-400/10 bg-transparent ml-auto sm:ml-0"
+                onClick={exportToCSV}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar CSV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-2">
@@ -302,7 +352,7 @@ export function PaymentHistory({
                 >
                   <option value="all" className="bg-slate-900 text-white">Mês (Todos)</option>
                   {availableMonths.map((m) => (
-                    <option key={m} value={m} className="bg-slate-900 text-white">{monthNames[Number(m) - 1]}</option>
+                     <option key={m} value={m} className="bg-slate-900 text-white">{monthNames[Number(m) - 1]}</option>
                   ))}
                 </select>
                 <select
@@ -315,6 +365,15 @@ export function PaymentHistory({
                     <option key={y} value={y} className="bg-slate-900 text-white">{y}</option>
                   ))}
                 </select>
+                
+                <div className="w-px h-6 bg-white/10 self-center flex-shrink-0 ml-2" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar titular..."
+                  className="bg-white/10 border border-white/5 text-white text-sm rounded-lg p-1.5 outline-none px-3 ml-2 flex-grow min-w-[120px]"
+                  value={searchTerm}
+                  onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(5); }}
+                />
               </div>
 
               {/* Row 2: Payer/Method filters */}

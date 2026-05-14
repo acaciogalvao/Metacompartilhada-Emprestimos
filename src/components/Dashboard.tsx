@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar, CheckCircle2 } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar, CheckCircle2, PieChart as PieChartIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface DashboardProps {
   goalsList: any[];
@@ -92,9 +93,68 @@ export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: Dashboard
     </div>
   );
 
+  const chartData = [
+    { name: "Empréstimos", value: loanStats.total, color: "#f43f5e" }, // rose-500
+    { name: "Metas", value: savingsStats.total, color: "#0ea5e9" }, // sky-500
+  ].filter(d => d.value > 0);
+
+  const COLORS = chartData.map(d => d.color);
+
   return (
     <div className="space-y-6 pb-24">
       <div className="uppercase tracking-widest text-[13px] font-bold text-slate-500 pl-1">Resumo Geral</div>
+      
+      {chartData.length > 0 && (
+        <Card className="glass-card border-0 mb-6">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-center gap-6">
+            <div className="w-40 h-40 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    stroke="none"
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '12px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <PieChartIcon className="w-6 h-6 text-slate-400 mb-1" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Portfólio</span>
+              </div>
+            </div>
+            <div className="flex-1 space-y-3 w-full">
+               <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-rose-500" />
+                   <span className="text-sm font-medium text-slate-300">Empréstimos</span>
+                 </div>
+                 <span className="text-sm font-bold text-white">{formatCurrency(loanStats.total)}</span>
+               </div>
+               <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-sky-500" />
+                   <span className="text-sm font-medium text-slate-300">Metas</span>
+                 </div>
+                 <span className="text-sm font-bold text-white">{formatCurrency(savingsStats.total)}</span>
+               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Empréstimos */}
       <Card className="glass-card border-0">
