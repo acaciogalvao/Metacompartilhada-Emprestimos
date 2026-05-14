@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { X, Calculator, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,35 +7,41 @@ interface LoanCalculatorProps {
   initialValue?: string;
   initialRate?: string;
   formatCurrency: (v: number) => string;
-  handleCurrencyChange: (raw: string, setter: (v: string) => void) => void;
+  handleCurrencyChange: (e: React.ChangeEvent<HTMLInputElement>, setter: (v: string) => void) => void;
 }
 
 export function LoanCalculator({ onClose, initialValue = "", initialRate = "", formatCurrency, handleCurrencyChange }: LoanCalculatorProps) {
   const [valor, setValor] = useState(initialValue);
   const [taxa, setTaxa] = useState(initialRate || "2");
   const [entrada, setEntrada] = useState("0");
-
-  const scenarios = [6, 12, 18, 24, 36, 48];
+  const [parcelas, setParcelas] = useState("12");
 
   const principal = useMemo(() => {
-    const v = Number(valor.replace(/\D/g, "")) / 100;
-    const e = Number(entrada.replace(/\D/g, "")) / 100;
+    const v = Number(valor) || 0;
+    const e = Number(entrada) || 0;
     return Math.max(0, v - e);
   }, [valor, entrada]);
 
-  const monthlyRate = useMemo(() => Number(taxa) / 100, [taxa]);
-
-  const calcPMT = (n: number): { installment: number; total: number; interest: number } => {
+  const calcSimpleInterest = (n: number) => {
     if (principal <= 0 || n <= 0) return { installment: 0, total: 0, interest: 0 };
-    if (monthlyRate === 0) {
-      const inst = principal / n;
-      return { installment: inst, total: principal, interest: 0 };
-    }
-    const r = monthlyRate;
-    const pmt = principal * r / (1 - Math.pow(1 + r, -n));
-    const total = pmt * n;
-    return { installment: pmt, total, interest: total - principal };
+    const r = Number(taxa) / 100;
+    const totalAmount = principal * (1 + r);
+    return { 
+      installment: totalAmount / n, 
+      total: totalAmount, 
+      interest: totalAmount - principal 
+    };
   };
+
+  const scenarios = useMemo(() => {
+    const customN = parseInt(parcelas, 10);
+    const defaultScenarios = [6, 12, 18, 24, 36, 48];
+    if (customN > 0 && !defaultScenarios.includes(customN)) {
+      const arr = [...defaultScenarios, customN].sort((a, b) => a - b);
+      return arr;
+    }
+    return defaultScenarios;
+  }, [parcelas]);
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-[80] p-0 sm:p-4">
@@ -58,31 +64,43 @@ export function LoanCalculator({ onClose, initialValue = "", initialRate = "", f
               <input
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-1 focus:ring-sky-500/50"
                 placeholder="R$ 0,00"
-                value={valor}
-                onChange={(e) => handleCurrencyChange(e.target.value, setValor)}
+                value={valor === "" ? "" : formatCurrency(Number(valor))}
+                onChange={(e) => handleCurrencyChange(e, setValor)}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Taxa mensal (%)</label>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Taxa Total (%)</label>
               <input
                 type="number"
                 step="0.1"
                 min="0"
-                max="30"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-1 focus:ring-sky-500/50"
                 value={taxa}
                 onChange={(e) => setTaxa(e.target.value)}
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Entrada (opcional)</label>
-            <input
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-1 focus:ring-sky-500/50"
-              placeholder="R$ 0,00"
-              value={entrada}
-              onChange={(e) => handleCurrencyChange(e.target.value, setEntrada)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Entrada (opcional)</label>
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-1 focus:ring-sky-500/50"
+                placeholder="R$ 0,00"
+                value={entrada === "" ? "" : formatCurrency(Number(entrada))}
+                onChange={(e) => handleCurrencyChange(e, setEntrada)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Parcelas</label>
+              <input
+                type="number"
+                min="1"
+                max="360"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-1 focus:ring-sky-500/50"
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+              />
+            </div>
           </div>
 
           {principal > 0 && (
@@ -109,10 +127,13 @@ export function LoanCalculator({ onClose, initialValue = "", initialRate = "", f
                 </thead>
                 <tbody>
                   {scenarios.map((n) => {
-                    const { installment, total, interest } = calcPMT(n);
+                    const { installment, total, interest } = calcSimpleInterest(n);
+                    const isCustom = n === parseInt(parcelas, 10);
                     return (
-                      <tr key={n} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-3 py-2.5 text-white font-semibold">{n}x</td>
+                      <tr key={n} className={`border-t border-white/5 transition-colors ${isCustom ? "bg-sky-500/10 hover:bg-sky-500/20" : "hover:bg-white/5"}`}>
+                        <td className="px-3 py-2.5 text-white font-semibold flex items-center gap-2">
+                          {n}x {isCustom && <span className="text-[10px] bg-sky-500/20 text-sky-400 px-1 rounded truncate max-w-[60px]">Sua escolha</span>}
+                        </td>
                         <td className="px-3 py-2.5 text-right text-emerald-400 font-bold">{formatCurrency(installment)}</td>
                         <td className="px-3 py-2.5 text-right text-rose-400 text-xs">{formatCurrency(interest)}</td>
                         <td className="px-3 py-2.5 text-right text-slate-300 text-xs">{formatCurrency(total)}</td>
@@ -122,7 +143,7 @@ export function LoanCalculator({ onClose, initialValue = "", initialRate = "", f
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-slate-500 text-center">* Juros compostos com tabela Price</p>
+            <p className="text-[10px] text-slate-500 text-center">* Juros simples flat (aplicado ao final e dividido em parcelas fixas)</p>
           </div>
 
           <Button onClick={onClose} className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-xl mt-2">
