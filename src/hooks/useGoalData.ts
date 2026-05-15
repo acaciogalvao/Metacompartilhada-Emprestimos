@@ -123,6 +123,7 @@ export const useGoalData = (
             ? 100
             : Number(goalState.contributionP1),
         remindersEnabled: goalState.remindersEnabled,
+        applyLateFees: goalState.applyLateFees,
         nameP1: goalState.nameP1,
         nameP2: goalState.nameP2,
         phoneP1: goalState.phoneP1,
@@ -133,8 +134,8 @@ export const useGoalData = (
         frequencyP2: goalState.frequencyP2,
         dueDayP1: goalState.dueDayP1,
         dueDayP2: goalState.dueDayP2,
-        savedP1: results.sP1,
-        savedP2: goalState.goalType === "individual" ? 0 : results.sP2,
+        savedP1: currentGoalId ? results.sP1 : 0,
+        savedP2: currentGoalId ? (goalState.goalType === "individual" ? 0 : results.sP2) : 0,
         ...overrideUpdates,
       };
 

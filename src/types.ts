@@ -46,6 +46,7 @@ export interface Goal {
   savedP2: number;
   payments: Payment[];
   remindersEnabled: boolean;
+  applyLateFees?: boolean;
 }
 
 export interface CalculationResults {

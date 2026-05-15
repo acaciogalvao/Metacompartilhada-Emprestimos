@@ -55,6 +55,7 @@ interface PaymentHistoryProps {
   totalPeriodsP2?: number;
   handleDeletePayment?: (paymentId: string) => void;
   goalType?: string;
+  allGoals?: any[];
 }
 
 export function PaymentHistory({
@@ -72,6 +73,7 @@ export function PaymentHistory({
   totalPeriodsP2 = 0,
   handleDeletePayment,
   goalType,
+  allGoals = [],
 }: PaymentHistoryProps) {
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -145,7 +147,29 @@ export function PaymentHistory({
   }, [paymentsHistory, installmentP1, installmentP2, totalPeriodsP1, totalPeriodsP2]);
 
   const filteredPayments = useMemo(() => {
-    return paymentsWithLabels
+    let sourcePayments = paymentsWithLabels;
+
+    // Se houver termo de busca, realiza busca global across all goals
+    if (searchTerm && allGoals && allGoals.length > 0) {
+      const globalPayments: any[] = [];
+      allGoals.forEach((goal) => {
+        if (goal.payments && Array.isArray(goal.payments)) {
+          goal.payments.forEach((p: any) => {
+            globalPayments.push({
+              ...p,
+              isFromOtherGoal: true,
+              parentGoalName: goal.itemName || (goal.category === "loan" ? "Empréstimo" : "Meta"),
+              goalNameP1: goal.nameP1,
+              goalNameP2: goal.nameP2,
+            });
+          });
+        }
+      });
+      // Replace source payments with global ones
+      sourcePayments = globalPayments;
+    }
+
+    return sourcePayments
       .filter((payment) => {
         const d = new Date(payment.date);
         const paymentMonth = (d.getMonth() + 1).toString();
@@ -154,10 +178,13 @@ export function PaymentHistory({
 
         const monthMatch = selectedMonth === "all" || paymentMonth === selectedMonth;
         const yearMatch = selectedYear === "all" || paymentYear === selectedYear;
-        const payerMatch = selectedPayer === "all" || payment.payerId === selectedPayer;
+        // Ignora os filtros de pagador se estiver realizando busca global
+        const payerMatch = (searchTerm && sourcePayments !== paymentsWithLabels) ? true : (selectedPayer === "all" || payment.payerId === selectedPayer);
         const methodMatch = selectedMethod === "all" || effectiveMethod === selectedMethod;
 
-        const payerName = payment.payerId === "P1" ? nameP1 : nameP2;
+        const payerName = payment.payerId === "P1" 
+          ? (payment.goalNameP1 || nameP1) 
+          : (payment.goalNameP2 || nameP2);
         
         const normalizeString = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
         
@@ -169,12 +196,13 @@ export function PaymentHistory({
                           payment.amount.toString().includes(searchTerm) ||
                           formatCurrency(payment.amount).includes(searchTerm) ||
                           normalizeString(effectiveMethod).includes(normalizeString(searchTerm)) ||
+                          (payment.parentGoalName && normalizeString(payment.parentGoalName).includes(normalizeString(searchTerm))) ||
                           dateStr.includes(searchTerm);
 
         return monthMatch && yearMatch && payerMatch && methodMatch && searchMatch;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [paymentsWithLabels, selectedMonth, selectedYear, selectedPayer, selectedMethod, searchTerm, nameP1, nameP2]);
+  }, [paymentsWithLabels, selectedMonth, selectedYear, selectedPayer, selectedMethod, searchTerm, nameP1, nameP2, allGoals]);
 
   const displayedPayments = filteredPayments.slice(0, visibleCount);
   const hasMore = visibleCount < filteredPayments.length;
@@ -459,7 +487,9 @@ export function PaymentHistory({
                 <div className="space-y-6">
                   {displayedPayments.map((payment, index) => {
                     const isP1 = payment.payerId === "P1";
-                    const payerName = isP1 ? nameP1 : nameP2;
+                    const payerName = isP1 
+                      ? (payment.goalNameP1 || nameP1) 
+                      : (payment.goalNameP2 || nameP2);
                     const paymentDate = new Date(payment.date);
                     const effectiveMethod = getEffectiveMethod(payment);
 
@@ -479,7 +509,10 @@ export function PaymentHistory({
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 ml-2">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-white">{payerName}</span>
+                                <span className="font-semibold text-white">
+                                  {payment.isFromOtherGoal && <span className="text-slate-400 font-normal mr-1">{payment.parentGoalName} -</span>}
+                                  {payerName}
+                                </span>
                                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 font-bold flex items-center gap-1 border border-sky-500/20">
                                   <CheckCircle2 className="w-3 h-3" />
                                   {effectiveMethod === "dinheiro" ? "Dinheiro" : "Pix"}

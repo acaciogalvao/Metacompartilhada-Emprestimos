@@ -105,6 +105,8 @@ export default function App() {
     setStartDate,
     remindersEnabled,
     setRemindersEnabled,
+    applyLateFees,
+    setApplyLateFees,
     clearGoalData,
     populateGoalData,
   } = goalState;
@@ -156,6 +158,7 @@ export default function App() {
 
   const results = useMemo(() => {
     return calculateGoal({
+      applyLateFees,
       totalValue,
       category,
       interestRate,
@@ -312,6 +315,8 @@ export default function App() {
                   setCategory={setCategory}
                   interestRate={interestRate}
                   setInterestRate={setInterestRate}
+                  applyLateFees={applyLateFees}
+                  setApplyLateFees={setApplyLateFees}
                   itemName={itemName}
                   setItemName={setItemName}
                   totalValue={totalValue}
@@ -457,6 +462,7 @@ export default function App() {
                       totalPeriodsP1={results.totalPeriodsP1}
                       totalPeriodsP2={results.totalPeriodsP2}
                       handleDeletePayment={handleDeletePaymentItem}
+                      allGoals={goalsList}
                     />
                   </div>
                 )}
@@ -494,6 +500,12 @@ export default function App() {
             installmentP2={results.installmentP2}
             remainingP1={results.remainingP1}
             remainingP2={results.remainingP2}
+            applyLateFees={applyLateFees}
+            isLateP1={results.isLateP1}
+            isLateP2={results.isLateP2}
+            daysToNextP1={results.daysToNextP1}
+            daysToNextP2={results.daysToNextP2}
+            interestRate={Number(interestRate)}
             pixCode={pixCode}
             setPixCode={setPixCode}
             qrCodeBase64={qrCodeBase64}

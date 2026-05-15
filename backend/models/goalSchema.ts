@@ -36,6 +36,7 @@ export const goalSchema = new mongoose.Schema(
     startDate: String,
     excludeSundays: { type: Boolean, default: false },
     remindersEnabled: { type: Boolean, default: false },
+    applyLateFees: { type: Boolean, default: false },
     payments: [paymentSchema],
   },
   { timestamps: true },

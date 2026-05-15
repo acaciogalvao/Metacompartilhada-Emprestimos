@@ -31,6 +31,7 @@ interface CalculationParams {
   contributionP1: string;
   dueDayP1: number;
   dueDayP2: number;
+  applyLateFees?: boolean;
 }
 
 export const calculateGoal = (
@@ -56,11 +57,8 @@ export const calculateGoal = (
     dueDayP2,
   } = params;
 
-  const baseTotal = Number(totalValue) || 0;
-  const isLoan = category === "loan";
-  const total = isLoan
-    ? baseTotal * (1 + (Number(interestRate) || 0) / 100)
-    : baseTotal;
+  let timeValue = Number(months) || 1;
+  let actualDurationUnit = durationUnit;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -79,9 +77,6 @@ export const calculateGoal = (
     }
     diffDays = Math.max(1, diffDays - sundaysCount);
   }
-
-  let timeValue = Number(months) || 1;
-  let actualDurationUnit = durationUnit;
 
   let calculatedStartDate = start.toISOString();
   let calculatedEndDate = end.toISOString();
@@ -113,6 +108,22 @@ export const calculateGoal = (
   let totalMonths = timeValue;
   if (actualDurationUnit === "days") totalMonths = timeValue / 30.4166;
   if (actualDurationUnit === "weeks") totalMonths = timeValue / 4.3333;
+
+  const baseTotal = Number(totalValue) || 0;
+  const isLoan = category === "loan";
+  
+  let total = baseTotal;
+  if (isLoan && Number(interestRate) > 0) {
+    if (params.applyLateFees) {
+      const rate = Number(interestRate) / 100;
+      const n = totalMonths > 0 ? totalMonths : 1;
+      // Tabela Price for monthly installments
+      const pmt = baseTotal * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+      total = pmt * n;
+    } else {
+      total = baseTotal * (1 + (Number(interestRate) || 0) / 100);
+    }
+  }
 
   const actualFreqP1 = frequencyP1;
   const actualFreqP2 = frequencyP2;

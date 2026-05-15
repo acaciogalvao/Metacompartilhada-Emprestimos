@@ -17,6 +17,8 @@ interface GoalFormProps {
   setCategory: (val: string) => void;
   interestRate: string;
   setInterestRate: (val: string) => void;
+  applyLateFees?: boolean;
+  setApplyLateFees?: (val: boolean) => void;
   itemName: string;
   setItemName: (val: string) => void;
   totalValue: string;
@@ -71,6 +73,8 @@ export function GoalForm({
   setCategory,
   interestRate,
   setInterestRate,
+  applyLateFees,
+  setApplyLateFees,
   itemName,
   setItemName,
   totalValue,
@@ -397,26 +401,48 @@ export function GoalForm({
               </div>
 
               {category === "loan" && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-right-2">
-                  <Label
-                    htmlFor="interestRate"
-                    className="text-sky-400 font-bold text-[10px] uppercase tracking-widest"
-                  >
-                    % Juros (Total)
-                  </Label>
-                  <div className="flex bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm h-12">
-                    <Input
-                      id="interestRate"
-                      type="number"
-                      step="0.1"
-                      value={interestRate}
-                      onChange={(e) => setInterestRate(e.target.value)}
-                      className="w-full border-0 bg-transparent text-center font-bold text-white focus-visible:ring-0 h-full px-1 sm:px-3"
-                    />
-                    <div className="flex items-center pr-2 pl-1 sm:px-3 text-slate-400 text-xs sm:text-sm border-l border-white/10 bg-black/20">
-                      %
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-2">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="interestRate"
+                      className="text-sky-400 font-bold text-[10px] uppercase tracking-widest"
+                    >
+                      % Juros (ao Mês)
+                    </Label>
+                    <div className="flex bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm h-12">
+                      <Input
+                        id="interestRate"
+                        type="number"
+                        step="0.1"
+                        value={interestRate}
+                        onChange={(e) => setInterestRate(e.target.value)}
+                        className="w-full border-0 bg-transparent text-center font-bold text-white focus-visible:ring-0 h-full px-1 sm:px-3"
+                      />
+                      <div className="flex items-center pr-2 pl-1 sm:px-3 text-slate-400 text-xs sm:text-sm border-l border-white/10 bg-black/20">
+                        %
+                      </div>
                     </div>
                   </div>
+
+                  {setApplyLateFees && (
+                    <div className="flex items-center justify-between p-3 bg-white/5 border border-sky-500/20 rounded-xl">
+                      <Label className="text-white text-xs font-medium cursor-pointer max-w-[80%]" htmlFor="applyLateFees">
+                        Aplicar regras de atraso (Tabela price e Encargos de 1.076% ao dia a.t)
+                      </Label>
+                      <div
+                        className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                          applyLateFees ? "bg-rose-500" : "bg-white/10"
+                        }`}
+                        onClick={() => setApplyLateFees(!applyLateFees)}
+                      >
+                        <div
+                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                            applyLateFees ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -425,10 +451,22 @@ export function GoalForm({
               <div className="text-xs text-slate-300 bg-sky-500/10 border border-sky-500/20 rounded-xl p-3 flex justify-between items-center">
                 <span>Total a pagar com Juros:</span>
                 <strong className="text-sm text-sky-400">
-                  {formatCurrency(
-                    Number(totalValue) *
-                      (1 + (Number(interestRate) || 0) / 100),
-                  )}
+                  {formatCurrency((() => {
+                    const baseTotal = Number(totalValue) || 0;
+                    const rate = Number(interestRate) / 100;
+                    if (rate <= 0) return baseTotal;
+                    if (applyLateFees) {
+                      let timeValue = Number(months) || 1;
+                      let totalMonths = timeValue;
+                      if (durationUnit === "days") totalMonths = timeValue / 30.4166;
+                      if (durationUnit === "weeks") totalMonths = timeValue / 4.3333;
+                      const n = totalMonths > 0 ? totalMonths : 1;
+                      const pmt = baseTotal * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+                      return pmt * n;
+                    } else {
+                      return baseTotal * (1 + rate);
+                    }
+                  })())}
                 </strong>
               </div>
             )}

@@ -46,6 +46,7 @@ export const useGoalState = () => {
   const [dueDayP2, setDueDayP2] = useState(5);
   const [startDate, setStartDate] = useState(new Date().toISOString());
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [applyLateFees, setApplyLateFees] = useState(false);
 
   const previousSavedRef = useRef<number | null>(null);
 
@@ -57,6 +58,7 @@ export const useGoalState = () => {
     setDurationUnit("months");
     setDeadlineType("duration");
     setExcludeSundays(false);
+    setApplyLateFees(false);
     const d = new Date();
     setStartDate(d.toISOString());
     d.setMonth(d.getMonth() + 12);
@@ -114,6 +116,8 @@ export const useGoalState = () => {
       if (data.startDate !== undefined) setStartDate(data.startDate);
       if (data.remindersEnabled !== undefined)
         setRemindersEnabled(data.remindersEnabled);
+      if (data.applyLateFees !== undefined)
+        setApplyLateFees(data.applyLateFees);
     }
 
     // Check if goal was just completed
@@ -192,6 +196,8 @@ export const useGoalState = () => {
     setStartDate,
     remindersEnabled,
     setRemindersEnabled,
+    applyLateFees,
+    setApplyLateFees,
     clearGoalData,
     populateGoalData,
   };

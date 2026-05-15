@@ -30,6 +30,12 @@ interface PixModalProps {
   installmentP2?: number;
   remainingP1?: number;
   remainingP2?: number;
+  applyLateFees?: boolean;
+  isLateP1?: boolean;
+  isLateP2?: boolean;
+  daysToNextP1?: number;
+  daysToNextP2?: number;
+  interestRate?: number;
   pixCode: string;
   setPixCode: (code: string) => void;
   qrCodeBase64: string;
@@ -63,6 +69,12 @@ export function PixModal({
   installmentP2 = 0,
   remainingP1 = 0,
   remainingP2 = 0,
+  applyLateFees = false,
+  isLateP1 = false,
+  isLateP2 = false,
+  daysToNextP1 = 0,
+  daysToNextP2 = 0,
+  interestRate = 0,
   pixCode,
   setPixCode,
   qrCodeBase64,
@@ -81,9 +93,35 @@ export function PixModal({
   handleCurrencyChange,
 }: PixModalProps) {
   const payerName = currentPayer === "P1" ? nameP1 : nameP2;
-  const installmentAmount =
-    currentPayer === "P1" ? installmentP1 : installmentP2;
+  const originalInstallmentAmount = currentPayer === "P1" ? installmentP1 : installmentP2;
   const remainingAmount = currentPayer === "P1" ? remainingP1 : remainingP2;
+  const isLate = currentPayer === "P1" ? isLateP1 : isLateP2;
+  const daysLate = currentPayer === "P1" ? Math.abs(daysToNextP1) : Math.abs(daysToNextP2);
+
+  // Late calculation
+  let lateDetails: null | { mora: number; total: number; dailyRatePercent: number } = null;
+  let installmentAmount = originalInstallmentAmount;
+
+  if (applyLateFees && isLate && daysLate > 0) {
+    const dailyPercentage = 1.0764457 / 100;
+    const taxaJurosAtraso = originalInstallmentAmount * dailyPercentage * daysLate;
+    
+    lateDetails = {
+      mora: taxaJurosAtraso,
+      total: originalInstallmentAmount + taxaJurosAtraso,
+      dailyRatePercent: 1.0764,
+    };
+    installmentAmount = lateDetails.total;
+  }
+
+  // Set initial PixAmount when modal opens if it's empty
+  useEffect(() => {
+    if (showPixModal && !pixAmount) {
+      // Default to 1 full installment (with late fees if applicable)
+      const amt = Math.min(installmentAmount, remainingAmount);
+      if (amt > 0) setPixAmount(amt.toFixed(2));
+    }
+  }, [showPixModal, pixAmount, installmentAmount, remainingAmount, setPixAmount]);
 
   // Ensure we don't pay more than remaining
   useEffect(() => {
@@ -145,6 +183,28 @@ export function PixModal({
               {payerName}
             </span>
           </p>
+
+          {lateDetails && (
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 mb-4 animate-in fade-in slide-in-from-top-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-rose-400 font-bold text-sm tracking-tight">Pagamento Atrasado ({daysLate} dias)</span>
+              </div>
+              <ul className="space-y-1 text-xs text-rose-300/80 font-medium">
+                <li className="flex justify-between">
+                  <span>Valor base da parcela:</span>
+                  <span>{formatCurrency(originalInstallmentAmount)}</span>
+                </li>
+                <li className="flex justify-between text-rose-400">
+                  <span>Encargos por atraso ({lateDetails.dailyRatePercent}% ao dia):</span>
+                  <span>{formatCurrency(lateDetails.mora)}</span>
+                </li>
+                <li className="flex justify-between font-bold text-rose-300 mt-1 pt-1 border-t border-rose-500/20">
+                  <span>Total atualizado:</span>
+                  <span>{formatCurrency(lateDetails.total)}</span>
+                </li>
+              </ul>
+            </div>
+          )}
 
           <div className="flex flex-col gap-4 mb-4">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-sm flex items-center">

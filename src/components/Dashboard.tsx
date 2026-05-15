@@ -42,13 +42,31 @@ function getNextDueDate(goal: any): Date | null {
   return d;
 }
 
+function getGoalTotal(g: any): number {
+  const isLoan = g.category === "loan";
+  const rate = (g.interestRate || 0) / 100;
+  if (!isLoan || rate <= 0) return g.totalValue || 0;
+  
+  if (g.applyLateFees) {
+    let timeValue = Number(g.months) || 1;
+    let totalMonths = timeValue;
+    if (g.durationUnit === "days") totalMonths = timeValue / 30.4166;
+    if (g.durationUnit === "weeks") totalMonths = timeValue / 4.3333;
+    const n = totalMonths > 0 ? totalMonths : 1;
+    const pmt = (g.totalValue || 0) * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+    return pmt * n;
+  } else {
+    return (g.totalValue || 0) * (1 + rate);
+  }
+}
+
 export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: DashboardProps) {
   const loans = goalsList.filter((g) => g.category === "loan");
   const savings = goalsList.filter((g) => g.category !== "loan");
 
   const loanStats = useMemo(() => {
     const totalBruto = loans.reduce((s, g) => s + (g.totalValue || 0), 0);
-    const totalComJuros = loans.reduce((s, g) => s + (g.totalValue || 0) * (1 + (g.interestRate || 0) / 100), 0);
+    const totalComJuros = loans.reduce((s, g) => s + getGoalTotal(g), 0);
     const paid = loans.reduce((s, g) => s + (g.savedP1 || 0) + (g.savedP2 || 0), 0);
     const remaining = Math.max(0, totalComJuros - paid);
     return { count: loans.length, total: totalComJuros, paid, remaining };
@@ -69,8 +87,7 @@ export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: Dashboard
 
     return goalsList
       .filter((g) => {
-        const isLoan = g.category === "loan";
-        const totalG = isLoan ? g.totalValue * (1 + (g.interestRate || 0) / 100) : g.totalValue;
+        const totalG = getGoalTotal(g);
         const paid = (g.savedP1 || 0) + (g.savedP2 || 0);
         return paid < totalG;
       })
@@ -229,7 +246,7 @@ export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: Dashboard
           <div className="space-y-3">
             {upcomingPayments.map(({ goal, nextDue }) => {
               const isLoan = goal.category === "loan";
-              const totalG = isLoan ? goal.totalValue * (1 + (goal.interestRate || 0) / 100) : goal.totalValue;
+              const totalG = getGoalTotal(goal);
               const paidG = (goal.savedP1 || 0) + (goal.savedP2 || 0);
               const remainingG = Math.max(0, totalG - paidG);
               const daysUntil = Math.ceil((nextDue!.getTime() - Date.now()) / 86400000);
