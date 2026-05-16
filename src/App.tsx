@@ -414,6 +414,8 @@ export default function App() {
                         itemName={itemName}
                         months={months}
                         durationUnit={durationUnit}
+                        dueDayP1={dueDayP1}
+                        dueDayP2={dueDayP2}
                         formatCurrency={formatCurrency}
                         getFreqLabel={getFreqLabel}
                         handleExportText={handleExportText}

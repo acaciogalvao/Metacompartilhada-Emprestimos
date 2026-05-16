@@ -59,6 +59,8 @@ interface GoalSummaryProps {
   itemName: string;
   months: string;
   durationUnit: "days" | "weeks" | "months";
+  dueDayP1?: number;
+  dueDayP2?: number;
   formatCurrency: (value: number) => string;
   getFreqLabel: (freq: string) => string;
   handleExportText: () => string;
@@ -99,6 +101,8 @@ export function GoalSummary({
   itemName,
   months,
   durationUnit,
+  dueDayP1 = 5,
+  dueDayP2 = 5,
   formatCurrency,
   getFreqLabel,
   handleExportText,
@@ -113,6 +117,15 @@ export function GoalSummary({
 }: GoalSummaryProps) {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [summaryText, setSummaryText] = useState("");
+
+  const getDueDateLabel = (freq: string, day: number) => {
+    if (freq === "daily") return "";
+    if (freq === "weekly") {
+      const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      return `(Venc. ${days[day] || "Seg"})`;
+    }
+    return `(Venc. dia ${day})`;
+  };
 
   const handleOpenReminder = () => {
     const text = handleExportText();
@@ -399,7 +412,7 @@ export function GoalSummary({
                   <span className="text-sm sm:text-[15px] font-bold text-pink-500">{formatCurrency(results.remainingP1)}</span>
                 </div>
                 <div className="flex flex-col text-right px-1">
-                  <span className="text-[11px] text-sky-400 mb-1">{getFreqLabel(frequencyP1)}</span>
+                  <span className="text-[11px] text-sky-400 mb-1">{getFreqLabel(frequencyP1)} <span className="text-[9px] text-sky-200/70">{getDueDateLabel(frequencyP1, dueDayP1)}</span></span>
                   <span className="text-sm sm:text-[15px] font-bold text-sky-500">{formatCurrency(results.installmentP1)}</span>
                 </div>
               </div>
@@ -480,7 +493,7 @@ export function GoalSummary({
                     <span className="text-sm sm:text-[15px] font-bold text-pink-500">{formatCurrency(results.remainingP2)}</span>
                   </div>
                   <div className="flex flex-col text-right px-1">
-                    <span className="text-[11px] text-sky-400 mb-1">{getFreqLabel(frequencyP2)}</span>
+                    <span className="text-[11px] text-sky-400 mb-1">{getFreqLabel(frequencyP2)} <span className="text-[9px] text-sky-200/70">{getDueDateLabel(frequencyP2, dueDayP2)}</span></span>
                     <span className="text-sm sm:text-[15px] font-bold text-sky-500">{formatCurrency(results.installmentP2)}</span>
                   </div>
                 </div>
