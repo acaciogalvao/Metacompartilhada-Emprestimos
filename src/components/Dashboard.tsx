@@ -44,10 +44,14 @@ function getNextDueDate(goal: any): Date | null {
 
 function getGoalTotal(g: any): number {
   const isLoan = g.category === "loan";
-  const rate = (g.interestRate || 0) / 100;
-  if (!isLoan || rate <= 0) return g.totalValue || 0;
+  if (!isLoan) return g.totalValue || 0;
   
+  let rate = (g.interestRate || 0) / 100;
   if (g.applyLateFees) {
+    rate = 0.0772782; // ~7.73% ao mês fixo para a regra
+  }
+  
+  if (rate > 0) {
     let timeValue = Number(g.months) || 1;
     let totalMonths = timeValue;
     if (g.durationUnit === "days") totalMonths = timeValue / 30.4166;
@@ -55,9 +59,9 @@ function getGoalTotal(g: any): number {
     const n = totalMonths > 0 ? totalMonths : 1;
     const pmt = (g.totalValue || 0) * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
     return pmt * n;
-  } else {
-    return (g.totalValue || 0) * (1 + rate);
   }
+  
+  return g.totalValue || 0;
 }
 
 export function Dashboard({ goalsList, formatCurrency, onSelectGoal }: DashboardProps) {

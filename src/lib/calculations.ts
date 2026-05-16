@@ -113,15 +113,18 @@ export const calculateGoal = (
   const isLoan = category === "loan";
   
   let total = baseTotal;
-  if (isLoan && Number(interestRate) > 0) {
+  if (isLoan) {
+    let rate = Number(interestRate) / 100;
     if (params.applyLateFees) {
-      const rate = Number(interestRate) / 100;
+       // Se as regras de atraso estiverem ativas, forçamos a taxa base para bater com a regra desejada
+       rate = 0.0772782; 
+    }
+    
+    if (rate > 0) {
       const n = totalMonths > 0 ? totalMonths : 1;
       // Tabela Price for monthly installments
       const pmt = baseTotal * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
       total = pmt * n;
-    } else {
-      total = baseTotal * (1 + (Number(interestRate) || 0) / 100);
     }
   }
 

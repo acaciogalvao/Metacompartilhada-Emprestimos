@@ -276,17 +276,29 @@ export function GoalSummary({
                   até {new Date(results.endDate || endDate).toLocaleDateString()}
                 </span>
                 {daysRemainingGoal !== null && (
-                  <span className="text-[11px] font-medium text-slate-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md inline-block mt-2">
-                    {daysRemainingGoal < 0 ? (
-                      <span className="text-rose-400">
-                        Atrasado há {Math.abs(daysRemainingGoal)} dia{Math.abs(daysRemainingGoal) > 1 ? "s" : ""}
+                  <div className="flex flex-col items-start mt-2">
+                    <span className="text-[11px] font-medium text-slate-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md inline-block">
+                      {daysRemainingGoal < 0 ? (
+                        <span className="text-rose-400">
+                          Atrasado há {Math.abs(daysRemainingGoal)} dia{Math.abs(daysRemainingGoal) > 1 ? "s" : ""}
+                        </span>
+                      ) : daysRemainingGoal === 0 ? (
+                        <span className="text-amber-400">Termina hoje!</span>
+                      ) : (
+                        <span>Faltam {daysRemainingGoal} dia{daysRemainingGoal > 1 ? "s" : ""}</span>
+                      )}
+                    </span>
+                    
+                    {category === "loan" && (
+                      <span className="text-[11px] font-medium text-slate-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md inline-block mt-1.5">
+                        {goalType === "individual" ? (
+                          <>{Math.min(results.paidPeriodsCountP1, results.totalPeriodsP1)} pagas • {Math.max(0, results.totalPeriodsP1 - results.paidPeriodsCountP1)} faltam (de {results.totalPeriodsP1})</>
+                        ) : (
+                          <>{Math.min(Math.max(results.paidPeriodsCountP1, results.paidPeriodsCountP2), Math.max(results.totalPeriodsP1, results.totalPeriodsP2))} pagas • {Math.max(0, Math.max(results.totalPeriodsP1, results.totalPeriodsP2) - Math.max(results.paidPeriodsCountP1, results.paidPeriodsCountP2))} faltam (de {Math.max(results.totalPeriodsP1, results.totalPeriodsP2)})</>
+                        )}
                       </span>
-                    ) : daysRemainingGoal === 0 ? (
-                      <span className="text-amber-400">Termina hoje!</span>
-                    ) : (
-                      <span>Faltam {daysRemainingGoal} dia{daysRemainingGoal > 1 ? "s" : ""}</span>
                     )}
-                  </span>
+                  </div>
                 )}
               </span>
             </div>

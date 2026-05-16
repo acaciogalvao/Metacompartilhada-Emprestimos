@@ -190,6 +190,9 @@ export function PixModal({
                 <span className="text-rose-400 font-bold text-sm tracking-tight">Pagamento Atrasado ({daysLate} dias)</span>
               </div>
               <ul className="space-y-1 text-xs text-rose-300/80 font-medium">
+                <li className="text-rose-400/60 mb-2 border-b border-rose-500/20 pb-2">
+                  Regra Aplicada: Juros de Empréstimo 7.73% a.m | Atraso 1.076% ao dia
+                </li>
                 <li className="flex justify-between">
                   <span>Valor base da parcela:</span>
                   <span>{formatCurrency(originalInstallmentAmount)}</span>
