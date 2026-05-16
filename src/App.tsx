@@ -176,6 +176,7 @@ export default function App() {
       contributionP1,
       dueDayP1,
       dueDayP2,
+      payments: paymentsHistory,
     });
   }, [
     totalValue, months, durationUnit, deadlineType, contributionP1,

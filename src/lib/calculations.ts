@@ -32,6 +32,7 @@ interface CalculationParams {
   dueDayP1: number;
   dueDayP2: number;
   applyLateFees?: boolean;
+  payments?: any[];
 }
 
 export const calculateGoal = (
@@ -114,17 +115,17 @@ export const calculateGoal = (
   
   let total = baseTotal;
   if (isLoan) {
-    let rate = Number(interestRate) / 100;
     if (params.applyLateFees) {
-       // Se as regras de atraso estiverem ativas, forçamos a taxa base para bater com a regra desejada
-       rate = 0.0772782; 
-    }
-    
-    if (rate > 0) {
-      const n = totalMonths > 0 ? totalMonths : 1;
-      // Tabela Price for monthly installments
-      const pmt = baseTotal * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
-      total = pmt * n;
+       const rate = 0.0772782; 
+       const n = totalMonths > 0 ? totalMonths : 1;
+       // Tabela Price for monthly installments
+       const pmt = baseTotal * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+       total = pmt * n;
+    } else {
+       const rate = Number(interestRate) / 100;
+       if (rate > 0) {
+         total = baseTotal * (1 + rate);
+       }
     }
   }
 
@@ -198,10 +199,30 @@ export const calculateGoal = (
     actualFreqP2,
   );
 
+  const getPaidPeriodsCount = (payerId: string, baseInstallment: number) => {
+    if (!params.payments || params.payments.length === 0 || baseInstallment <= 0) return 0;
+    let count = 0;
+    for (const p of params.payments) {
+      if (p.payerId === payerId) {
+        // Usa a divisão exata com pequena tolerância para aproximações.
+        // E.g., 36/18 = 2. Com juros de mora (e.g. 40/18 = 2.22), arredondar pra mais próximo ou floor 
+        // impede que juros contem como parcela extra.
+        const periods = Math.floor((p.amount + 0.05) / baseInstallment);
+        count += Math.max(1, periods);
+      }
+    }
+    return count;
+  };
+
   const paidPeriodsCountP1 =
-    baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
+    params.payments && params.payments.length > 0
+      ? getPaidPeriodsCount("P1", baseInstallmentP1)
+      : baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
+  
   const paidPeriodsCountP2 =
-    baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
+    params.payments && params.payments.length > 0
+      ? getPaidPeriodsCount("P2", baseInstallmentP2)
+      : baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
 
   const monthlyP1 = totalMonths > 0 ? remainingP1 / totalMonths : 0;
   const monthlyP2 = totalMonths > 0 ? remainingP2 / totalMonths : 0;
