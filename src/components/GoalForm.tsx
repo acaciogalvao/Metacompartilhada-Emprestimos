@@ -1149,6 +1149,46 @@ export function GoalForm({
                     ))}
                   </div>
                 </div>
+
+                {frequencyP1 === "weekly" && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 mt-4">
+                    <Label className="text-slate-400 font-bold text-xs">
+                      Qual dia da semana?
+                    </Label>
+                    <select
+                      value={dueDayP1}
+                      onChange={(e) => setDueDayP1(Number(e.target.value))}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 text-white h-11 px-3 focus:outline-none focus:ring-1 focus:ring-sky-500/50 appearance-none"
+                    >
+                      <option value={0} className="bg-slate-900">Domingo</option>
+                      <option value={1} className="bg-slate-900">Segunda-feira</option>
+                      <option value={2} className="bg-slate-900">Terça-feira</option>
+                      <option value={3} className="bg-slate-900">Quarta-feira</option>
+                      <option value={4} className="bg-slate-900">Quinta-feira</option>
+                      <option value={5} className="bg-slate-900">Sexta-feira</option>
+                      <option value={6} className="bg-slate-900">Sábado</option>
+                    </select>
+                  </div>
+                )}
+
+                {frequencyP1 === "monthly" && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 mt-4">
+                    <Label className="text-slate-400 font-bold text-xs">
+                      Qual dia do mês?
+                    </Label>
+                    <select
+                      value={dueDayP1}
+                      onChange={(e) => setDueDayP1(Number(e.target.value))}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 text-white h-11 px-3 focus:outline-none focus:ring-1 focus:ring-sky-500/50 appearance-none"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <option key={day} value={day} className="bg-slate-900">
+                          Dia {day}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
