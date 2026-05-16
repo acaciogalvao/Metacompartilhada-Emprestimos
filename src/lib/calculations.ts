@@ -199,30 +199,11 @@ export const calculateGoal = (
     actualFreqP2,
   );
 
-  const getPaidPeriodsCount = (payerId: string, baseInstallment: number) => {
-    if (!params.payments || params.payments.length === 0 || baseInstallment <= 0) return 0;
-    let count = 0;
-    for (const p of params.payments) {
-      if (p.payerId === payerId) {
-        // Usa a divisão exata com pequena tolerância para aproximações.
-        // E.g., 36/18 = 2. Com juros de mora (e.g. 40/18 = 2.22), arredondar pra mais próximo ou floor 
-        // impede que juros contem como parcela extra.
-        const periods = Math.floor((p.amount + 0.05) / baseInstallment);
-        count += Math.max(1, periods);
-      }
-    }
-    return count;
-  };
-
   const paidPeriodsCountP1 =
-    params.payments && params.payments.length > 0
-      ? getPaidPeriodsCount("P1", baseInstallmentP1)
-      : baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
+    baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
   
   const paidPeriodsCountP2 =
-    params.payments && params.payments.length > 0
-      ? getPaidPeriodsCount("P2", baseInstallmentP2)
-      : baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
+    baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
 
   const monthlyP1 = totalMonths > 0 ? remainingP1 / totalMonths : 0;
   const monthlyP2 = totalMonths > 0 ? remainingP2 / totalMonths : 0;
