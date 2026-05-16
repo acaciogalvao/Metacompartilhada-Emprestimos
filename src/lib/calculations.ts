@@ -199,11 +199,40 @@ export const calculateGoal = (
     actualFreqP2,
   );
 
+  const getPaidPeriodsCount = (payerId: string, baseInstallment: number) => {
+    if (!params.payments || params.payments.length === 0) return 0;
+    
+    const sorted = [...params.payments].sort(
+      (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+
+    let cumulative = 0;
+    let endPeriod = 0;
+    let fallbackCount = 0;
+
+    for (const payment of sorted) {
+      if (payment.payerId === payerId) {
+        if (baseInstallment > 0) {
+          cumulative += payment.amount;
+          endPeriod = Math.floor(cumulative / baseInstallment + 0.05);
+        } else if (payment.amount >= 0) {
+          fallbackCount++;
+          endPeriod = fallbackCount;
+        }
+      }
+    }
+    return endPeriod;
+  };
+
   const paidPeriodsCountP1 =
-    baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
+    params.payments && params.payments.length > 0
+      ? getPaidPeriodsCount("P1", baseInstallmentP1)
+      : baseInstallmentP1 > 0 ? Math.floor(sP1 / baseInstallmentP1 + 0.05) : 0;
   
   const paidPeriodsCountP2 =
-    baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
+    params.payments && params.payments.length > 0
+      ? getPaidPeriodsCount("P2", baseInstallmentP2)
+      : baseInstallmentP2 > 0 ? Math.floor(sP2 / baseInstallmentP2 + 0.05) : 0;
 
   const monthlyP1 = totalMonths > 0 ? remainingP1 / totalMonths : 0;
   const monthlyP2 = totalMonths > 0 ? remainingP2 / totalMonths : 0;
